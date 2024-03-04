@@ -13,14 +13,19 @@ class SSHConnectingAndExec:
         'password': '',
     }
 
-    def __init__(self, hostname: str, port: int, username: str, password: str, command: str) -> None:
+    def __init__(self, hostname: str, port: int, username: str, password: str, command: str, command2: str = '') -> None:
         self.command = command
+        self.command2 = command2
         self._data_dict['hostname'] = hostname
         self._data_dict['port'] = port
         self._data_dict['username'] = username
         self._data_dict['password'] = password
 
     def start_connection(self) -> str:
+        global return1
+        global retunr2
+        global transport
+
         # Создаем объект SSHClient
         client = paramiko.SSHClient()
         # Устанавливаем политику проверки хостов (в данном случае - игнорируем проверку)
@@ -38,6 +43,7 @@ class SSHConnectingAndExec:
 
                 # Выполняем команду на удаленном сервере
                 print('\n\nВыполняю команду на удаленном сервере')
+                print(self.command)
                 transport.exec_command("sudo bash -c \"" + self.command + "\"")
                 stdin = transport.makefile('wb', -1)
                 stdout = transport.makefile('rb', -1)
@@ -45,10 +51,32 @@ class SSHConnectingAndExec:
                 stdin.write(self._data_dict['password'] + '\n')
                 stdin.flush()
 
+                # Прерывание выполнения команды
+                #transport.send(b"\x03")  # Отправляем сигнал прерывания (Ctrl+C)
                 # Читаем результат выполнения команды
-                print('Читаем результат выполнения команды')
-                return stdout.read().decode("utf-8")
 
+                print('Читаем результат выполнения команды')
+                return1 = stdout.read().decode("utf-8")
+
+                if self.command2 != '':
+                    transport = client.get_transport().open_session()
+                    if transport is not None:
+                        transport.set_combine_stderr(True)
+                        transport.get_pty()
+
+                        # Выполняем команду на удаленном сервере
+                        print('\n\nВыполняю команду на удаленном сервере')
+                        transport.exec_command("sudo bash -c \"" + self.command2 + "\"")
+                        stdin = transport.makefile('wb', -1)
+                        stdout = transport.makefile('rb', -1)
+                        # Ввод пароля
+                        stdin.write(self._data_dict['password'] + '\n')
+                        stdin.flush()
+                        print('Читаем результат выполнения команды')
+                        return2 = stdout.read().decode("utf-8") + '\n' + return1
+                        return return2
+
+                return return1
             else:
                 return 'Ошибка соединения'
 
