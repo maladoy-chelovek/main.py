@@ -331,15 +331,22 @@ class window(QDialog):
 
     def status_serv(self):
         status = 'systemctl status '
-        self.ui.plainTextEdit_Memo.appendPlainText('Вывод статуса оборудования ' + str(datetime.datetime.now()))
+        self.ui.plainTextEdit_Memo.appendPlainText('Вывод статуса оборудования ' + str(datetime.datetime.now()) + '\n')
+        try:
+            new_connect = connect_ssh.SSHConnectingAndExec(hostname=self.__cur_data['ip'], port=self.__cur_data['port'],
+                                                           username=self.__cur_data['login'],
+                                                           password=self.__cur_data['passw'],
+                                                           command=status + self.__list_commands[2],
+                                                           command2=status + self.__list_commands[3]
+                                                           )
+            result = new_connect.start_connection()  # Получение результата функции
 
-        new_connect = connect_ssh.SSHConnectingAndExec(hostname=self.__cur_data['ip'], port=self.__cur_data['port'],
-                                                       username=self.__cur_data['login'],
-                                                       password=self.__cur_data['passw'],
-                                                       command=status + self.__list_commands[1])
-        result = new_connect.start_connection()
-        self.ui.plainTextEdit_Memo.appendPlainText(
-            self.__cur_data['name'] + ' ' + self.__cur_data['ip'] + '\n' + result)
+            self.ui.plainTextEdit_Memo.appendPlainText(self.__cur_data['name'] + ' ' + self.__cur_data['ip'])
+            self.ui.plainTextEdit_Memo.appendPlainText('Статус Трансляции')
+            self.ui.plainTextEdit_Memo.appendPlainText(result)
+            self.ui.plainTextEdit_Memo.insertPlainText('Статус Генерации')
+        except Exception as e:
+            self.ui.plainTextEdit_Memo.appendPlainText('Ошибка в выполнении shh запроса {error}'.format(error=e))
 
 def is_ipadress(ip: str):
     # Регулярное выражение для проверки формата IP-адреса
